@@ -1,0 +1,9 @@
+{
+  "metric": "balanced_f1",
+  "n_SS": 5,
+  "n_NS": 5,
+  "mean_SS": 0.66814,
+  "mean_NS": 0.61494,
+  "t_test_pvalue": 0.00014854409308894375,
+  "stars": "***"
+}

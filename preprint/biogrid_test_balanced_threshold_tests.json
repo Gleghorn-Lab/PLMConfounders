@@ -1,0 +1,9 @@
+{
+  "metric": "balanced_threshold",
+  "n_SS": 5,
+  "n_NS": 5,
+  "mean_SS": 0.5007135987281799,
+  "mean_NS": 0.9023519873619079,
+  "t_test_pvalue": 3.1559592763427005e-08,
+  "stars": "****"
+}

@@ -1,0 +1,9 @@
+{
+  "metric": "valid_best_mcc",
+  "n_match": 5,
+  "n_nomatch": 5,
+  "mean_match": 0.39476000000000006,
+  "mean_nomatch": 0.71116,
+  "t_test_pvalue": 4.2366913702352236e-09,
+  "stars": "****"
+}

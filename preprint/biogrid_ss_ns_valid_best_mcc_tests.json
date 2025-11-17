@@ -1,0 +1,9 @@
+{
+  "metric": "valid_best_mcc",
+  "n_SS": 5,
+  "n_NS": 5,
+  "mean_SS": 0.39476000000000006,
+  "mean_NS": 0.71116,
+  "t_test_pvalue": 4.2366913702352236e-09,
+  "stars": "****"
+}

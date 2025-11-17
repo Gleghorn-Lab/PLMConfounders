@@ -1,0 +1,10 @@
+organism,pos_count,neg_count,pos_prop,neg_prop
+Arabidopsis thaliana,16,14,0.08,0.07
+Caenorhabditis elegans,6,4,0.03,0.02
+Drosophila melanogaster,6,0,0.03,0.0
+Escherichia coli,26,32,0.13,0.16
+Homo sapiens,75,68,0.375,0.34
+Mus musculus,6,6,0.03,0.03
+Saccharomyces cerevisiae,54,58,0.27,0.29
+Schizosaccharomyces pombe,10,16,0.05,0.08
+Severe acute respiratory syndrome coronavirus 2,1,2,0.005,0.01

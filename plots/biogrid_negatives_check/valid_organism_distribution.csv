@@ -1,0 +1,10 @@
+organism,pos_count,neg_count,pos_prop,neg_prop
+Arabidopsis thaliana,2,2,0.01,0.01
+Caenorhabditis elegans,2,2,0.01,0.01
+Drosophila melanogaster,2,0,0.01,0.0
+Escherichia coli,8,10,0.04,0.05
+Homo sapiens,91,86,0.455,0.43
+Mus musculus,8,4,0.04,0.02
+Rattus norvegicus,3,0,0.015,0.0
+Saccharomyces cerevisiae,72,86,0.36,0.43
+Schizosaccharomyces pombe,12,10,0.06,0.05

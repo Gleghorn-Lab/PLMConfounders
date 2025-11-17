@@ -1,0 +1,3 @@
+*.pyc
+/wandb
+processed_datasets/*.cs
