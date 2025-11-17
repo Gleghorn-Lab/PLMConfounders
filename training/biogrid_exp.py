@@ -9,11 +9,23 @@ import random
 import torch
 import datetime
 import logging
+import numpy as np
 from torch.utils.data import DataLoader
 from huggingface_hub import login
 from tqdm import tqdm
 from typing import Optional, Dict
 from transformers import AutoModel, get_scheduler
+from sklearn.metrics import (
+    roc_auc_score,
+    precision_recall_curve,
+    auc,
+    confusion_matrix,
+    accuracy_score,
+    f1_score,
+    precision_score,
+    recall_score,
+    matthews_corrcoef
+)
 
 from data.biogrid import get_biogrid_data
 from training.utils import set_seed, parse_args, AutoGradClipper
@@ -242,6 +254,136 @@ class BiogridBinaryTrainer:
         neg = int((self.train_df['labels'] == 0).sum())
         pos_weight = torch.tensor(neg / max(1, pos), device=self.device, dtype=torch.float32)
         self.loss_fct = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight, reduction='mean')
+
+    def _metrics_helper(self, logits: np.ndarray, labels: np.ndarray, prefix: Optional[str] = '') -> Dict[str, float]:
+        metrics = {}
+        
+        # Validate input arrays
+        if len(logits) == 0 or len(labels) == 0:
+            print(f"Warning: Empty arrays provided to _metrics_helper (logits: {len(logits)}, labels: {len(labels)})")
+            return metrics
+        
+        # Check if we have both classes for ROC AUC calculation
+        unique_labels = np.unique(labels)
+        if len(unique_labels) < 2:
+            print(f"Warning: Only one class found in labels: {unique_labels}, cannot calculate ROC AUC")
+            return metrics
+        
+        roc_auc = roc_auc_score(labels, logits)
+        precisions, recalls, thresholds = precision_recall_curve(labels, logits)
+        pr_auc = auc(recalls, precisions)
+
+        # Only sample 100 thresholds for speed
+        if len(thresholds) > 100:
+            idxs = np.linspace(0, len(thresholds) - 1, 100, dtype=int)
+            sampled_thresholds = thresholds[idxs]
+        else:
+            sampled_thresholds = thresholds
+
+        f1_scores = []
+        for t in sampled_thresholds:
+            preds = logits > t
+            f1 = f1_score(labels, preds, average='macro')
+            f1_scores.append(f1)
+
+        best_idx = np.argmax(np.array(f1_scores))
+        best_threshold = sampled_thresholds[best_idx]
+
+        best_preds = (logits >= best_threshold).astype(int)
+        f1 = f1_score(labels, best_preds, average='weighted')
+        precision = precision_score(labels, best_preds, average='weighted')
+        recall = recall_score(labels, best_preds, average='weighted')
+        accuracy = accuracy_score(labels, best_preds)
+        mcc = matthews_corrcoef(labels, best_preds)
+
+        metrics[f'{prefix}_roc_auc'] = roc_auc
+        metrics[f'{prefix}_pr_auc'] = pr_auc
+        metrics[f'{prefix}_f1'] = f1
+        metrics[f'{prefix}_precision'] = precision
+        metrics[f'{prefix}_recall'] = recall
+        metrics[f'{prefix}_accuracy'] = accuracy
+        metrics[f'{prefix}_mcc'] = mcc
+        metrics[f'{prefix}_threshold'] = best_threshold
+
+        print(f"{prefix}_Confusion matrix:")
+        print(confusion_matrix(labels, best_preds))
+        return metrics
+
+    def calculate_metrics(self, logits: torch.Tensor, labels: torch.Tensor, string_labels: Optional[torch.Tensor] = None) -> Dict[str, float]:
+        if isinstance(logits, torch.Tensor):
+            logits = logits.numpy()
+        if isinstance(labels, torch.Tensor):
+            labels = labels.numpy()
+        if string_labels is not None:
+            if isinstance(string_labels, torch.Tensor):
+                string_labels = string_labels.numpy()
+                string_labels = string_labels.flatten()
+
+        logits = logits.flatten()
+        labels = labels.flatten()
+
+        # Filter out violation labels (-100.0) and keep only valid labels (0 or 1)
+        valid_mask = (labels == 0) | (labels == 1)
+        if not valid_mask.any():
+            print("Warning: No valid labels found (all are violations). Returning default metrics.")
+            return {
+                'ratio': 1.0,
+                'avg_pos': 0.5,
+                'avg_neg': 0.5,
+                'roc_auc': 0.5,
+                'pr_auc': 0.5,
+                'f1': 0.0,
+                'precision': 0.0,
+                'recall': 0.0,
+                'accuracy': 0.0,
+                'mcc': 0.0,
+                'threshold': 0.5,
+            }
+        
+        valid_logits = logits[valid_mask]
+        valid_labels = labels[valid_mask]
+
+        # Balance the dataset: sample as many negatives as there are positives
+        pos_indices = np.where(valid_labels == 1)[0]
+        neg_indices = np.where(valid_labels == 0)[0]
+        n_pos = len(pos_indices)
+        n_neg = len(neg_indices)
+
+        # Randomly sample negatives to match the number of positives
+        if n_neg > n_pos:
+            sampled_neg_indices = np.random.choice(neg_indices, size=n_pos, replace=False)
+        else:
+            sampled_neg_indices = neg_indices
+
+        balanced_indices = np.concatenate([pos_indices, sampled_neg_indices])
+        np.random.shuffle(balanced_indices)
+
+        logits_bal = valid_logits[balanced_indices]
+        labels_bal = valid_labels[balanced_indices]
+
+        pos_values = logits_bal[labels_bal == 1]
+        neg_values = logits_bal[labels_bal == 0]
+        pos_avg = pos_values.mean()
+        neg_avg = neg_values.mean()
+        ratio = pos_avg / neg_avg if neg_avg != 0 else float('inf')
+
+        metrics = self._metrics_helper(logits_bal, labels_bal, prefix='balanced')
+
+        if string_labels is not None:
+            string_labels = string_labels[valid_mask]
+            string_labels = string_labels[balanced_indices]
+            string_thresholds = [1.5, 4.0, 7.0, 9.0]
+            for t in string_thresholds:
+                string_mask = string_labels > t
+                logits_string = logits_bal[string_mask]
+                labels_string = labels_bal[string_mask]
+                p = str(t).replace('.', '') + '0'
+                if len(logits_string) == 0:
+                    continue
+                string_metrics = self._metrics_helper(logits_string, labels_string, prefix=f'string_{p}')
+                metrics.update(string_metrics)
+
+        return metrics
 
     def train_step(self, batch):
         batch = {k: v.to(self.device) for k, v in batch.items()}
