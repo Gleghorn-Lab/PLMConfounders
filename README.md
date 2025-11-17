@@ -5,8 +5,6 @@
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-orange.svg)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)]()
 
-> **Warning**: This repository demonstrates that protein language models (pLMs) can exploit phylogenetic distances in multi-species datasets to achieve artificially inflated performance on protein-protein interaction (PPI) prediction tasks. We introduce the **"accidental taxonomist"** hypothesis and provide solutions for proper dataset construction.
-
 ## Overview
 
 Protein-protein interactions (PPIs) are fundamental to nearly all biological processes, and computational methods using protein language models (pLMs) have shown promising results. However, we uncovered a critical confounding factor: **pLM-based models can "cheat" by learning to distinguish taxonomic origin rather than genuine interaction features**.
@@ -22,7 +20,7 @@ Protein-protein interactions (PPIs) are fundamental to nearly all biological pro
 
 Traditional PPI datasets use random negative sampling, which creates an unintended signal:
 - ✅ **Positive PPIs**: Protein A and B from *same species* → Label = 1
-- ❌ **Negative PPIs**: Protein A and B from *different species* (~69% of the time) → Label = 0
+- ❌ **Negative PPIs**: Protein A and B from *different species* (~70% of the time) → Label = 0
 
 Models learn this taxonomic shortcut instead of (or in addition to) genuine PPI features, resulting in misleadingly high performance metrics.
 
@@ -31,9 +29,7 @@ Models learn this taxonomic shortcut instead of (or in addition to) genuine PPI 
 ### Prerequisites
 
 - Python 3.8+
-- Docker Desktop (required for Windows users)
-- CUDA-compatible GPU (recommended for training)
-- 16GB+ RAM
+- Docker or Docker Desktop (required for Windows users)
 
 ### Setup
 
@@ -48,15 +44,17 @@ cd PLMConfounders
 pip install -r requirements.txt
 ```
 
+or utilize a **Python virtual environment**
+```bash
+chmod +x setup_bioenv.sh
+./setup_bioenv.sh
+source ~/bioenv/bin/activate
+```
+
 3. **Install and start Docker**:
    - Download and install [Docker Desktop](https://www.docker.com/products/docker-desktop/)
    - **Windows users**: Ensure Docker Desktop is running before executing training scripts
    - The training pipeline uses Docker containers for embedding generation and data processing
-
-4. **(Optional) Set up Weights & Biases**:
-```bash
-wandb login
-```
 
 ## Usage
 
@@ -183,24 +181,17 @@ If you use this code or findings in your research, please cite:
 @article{hallee2025accidental,
   title={Protein Language Models are Accidental Taxonomists},
   author={Hallee, Logan and Peleg, Tamar and Rafailidis, Nikolaos and Gleghorn, Jason P.},
-  journal={Preprint},
+  journal={bioRxiv},
   year={2025}
 }
 ```
 
-## Related Work
-
-- **[Protify](https://github.com/Gleghorn-Lab/Protify)**: High-throughput analysis framework for chemical language models
-- **[SYNTERACT](https://github.com/Gleghorn-Lab/SYNTERACT)**: Our earlier work on the "accidental localizer" problem in PPI prediction
-- **Bernett et al. (2024)**: Gold-standard single-species PPI benchmark
-- **Ko et al. (2024)**: TUNA - comprehensive PPI prediction benchmarking
-
 ## Data Availability
 
 - **Processed datasets**: Available in `processed_datasets/` after running training scripts
-- **BioGRID source**: Downloaded automatically from [thebiogrid.org](https://thebiogrid.org/)
+- **BioGRID source**: Downloaded from [thebiogrid.org](https://thebiogrid.org/)
 - **Model weights**: Saved to `results/` after training
-- **Protify datasets**: Available at [Protify repository](https://github.com/Gleghorn-Lab/Protify)
+- **Protify datasets / code**: Available at [Protify repository](https://github.com/Gleghorn-Lab/Protify)
 
 ## Contributing
 
