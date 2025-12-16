@@ -5,177 +5,286 @@
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-orange.svg)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)]()
 
+This repository contains the code and data for reproducing the experiments in *"Protein Language Models are Accidental Taxonomists"*. We demonstrate that protein language model (pLM)-based PPI predictors can exploit phylogenetic signals in multi-species datasets, achieving artificially inflated performance by learning to distinguish taxonomic origin rather than genuine interaction features.
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Key Findings](#key-findings)
+- [Installation](#installation)
+- [Reproducing Experiments](#reproducing-experiments)
+- [Code Architecture](#code-architecture)
+- [Model Architecture](#model-architecture)
+- [Dataset Construction](#dataset-construction)
+- [Results](#results)
+- [Citation](#citation)
+
+---
+
 ## Overview
 
-Protein-protein interactions (PPIs) are fundamental to nearly all biological processes, and computational methods using protein language models (pLMs) have shown promising results. However, we uncovered a critical confounding factor: **pLM-based models can "cheat" by learning to distinguish taxonomic origin rather than genuine interaction features**.
+Protein-protein interaction (PPI) prediction is a fundamental problem in computational biology. While pLM-based methods report high performance on multi-species datasets, we hypothesize that much of this performance stems from an unintended shortcut: **models learn to detect whether two proteins share a taxonomic origin**, rather than learning genuine interaction features.
 
-### Key Findings
+### The Accidental Taxonomist Hypothesis
 
-- **Multi-species PPI datasets have inherent phylogenetic biases**: When negatives are randomly sampled, only ~31% share the same species as positives, while real PPIs are almost always intra-species.
-- **pLMs encode phylogenetic information**: Models can distinguish whether two proteins share taxonomic origin with 0.87 F1 score.
-- **Strategic sampling prevents cheating**: Restricting negative examples to same-species pairs eliminates the taxonomic shortcut.
-- **Multi-species data still helps**: When properly curated, multi-species models outperform single-species models (0.37 vs 0.30 MCC on rigorous test sets).
+In standard multi-species PPI datasets with random negative sampling:
+- **Positive pairs**: Almost exclusively from the same species (real PPIs occur within organisms)
+- **Negative pairs**: ~70% from different species (random sampling across the dataset)
 
-### The "Accidental Taxonomist" Problem
+This creates a strong correlation between label and phylogenetic distance that models can exploit.
 
-Traditional PPI datasets use random negative sampling, which creates an unintended signal:
-- ✅ **Positive PPIs**: Protein A and B from *same species* → Label = 1
-- ❌ **Negative PPIs**: Protein A and B from *different species* (~70% of the time) → Label = 0
+---
 
-Models learn this taxonomic shortcut instead of (or in addition to) genuine PPI features, resulting in misleadingly high performance metrics.
+## Key Findings
+
+| Finding | Evidence |
+|---------|----------|
+| **Phylogenetic bias in datasets** | Only ~31% of randomly sampled negatives share species origin |
+| **pLMs encode taxonomy** | 0.87 F1 score distinguishing same vs. different species pairs |
+| **Models exploit this signal** | NS models: 0.71 MCC (validation) → 0.23 MCC (SS test set) |
+| **Strategic sampling prevents cheating** | SS models maintain consistent 0.37-0.39 MCC across splits |
+| **Multi-species data still helps** | SS models outperform single-species SOTA (0.37 vs 0.30 MCC) |
+
+---
 
 ## Installation
 
 ### Prerequisites
 
 - Python 3.8+
-- Docker or Docker Desktop (required for Windows users)
+- CUDA-capable GPU (recommended)
+- Docker (required for CD-HIT sequence clustering)
 
 ### Setup
 
-1. **Clone the repository**:
 ```bash
+# Clone repository
 git clone https://github.com/Gleghorn-Lab/PLMConfounders.git
 cd PLMConfounders
-```
 
-2. **Install Python dependencies**:
-```bash
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-or utilize a **Python virtual environment**
-```bash
-chmod +x setup_bioenv.sh
-./setup_bioenv.sh
-source ~/bioenv/bin/activate
-```
+**Windows users**: Ensure Docker Desktop is running before executing training scripts. The pipeline uses Docker containers for CD-HIT clustering.
 
-3. **Install and start Docker**:
-   - Download and install [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-   - **Windows users**: Ensure Docker Desktop is running before executing training scripts
-   - The training pipeline uses Docker containers for embedding generation and data processing
+---
 
-## Usage
+## Reproducing Experiments
 
-### Reproducing the Experiments
+### Full Paper Reproduction
 
-To reproduce the BioGRID PPI experiments from the paper:
+To reproduce the complete NS vs. SS experiment from the paper:
 
 ```bash
-py -m training.biogrid_exp
+py -m training.biogrid_exp --reproduce_paper
 ```
 
-This will:
-1. Download and process BioGRID data
-2. Generate two training conditions:
-   - **Normal Sampling (NS)**: Negatives randomly sampled from entire dataset
-   - **Strategic Sampling (SS)**: Negatives sampled from within same species
-3. Train 5 models for each condition with different random seeds
-4. Evaluate on rigorous test sets (C3 splits, 40% CD-HIT clustering)
-5. Save results to `results/biogrid_species_experiment/`
+This executes:
+1. Downloads BioGRID data via HuggingFace (`Synthyra/BIOGRID`)
+2. Clusters sequences at 40% identity using CD-HIT (Docker)
+3. Constructs C3 train/validation/test splits (no sequence overlap)
+4. Generates negatives via Normal Sampling (NS) and Strategic Sampling (SS)
+5. Trains 5 models per condition with seeds `[314, 550, 576, 669, 842]`
+6. Evaluates all models on SS test set to reveal cheating behavior
 
-**Note**: Full training requires significant computational resources (tested on GH200 GPU). For quick testing, use the `--bugfix` flag:
+**Hardware requirements**: Full training requires ~24GB GPU memory (tested on GH200). Training time: ~4 hours per model.
+
+### Quick Testing
+
+For development or verification:
 
 ```bash
 py -m training.biogrid_exp --bugfix
 ```
 
-### Command-Line Arguments
+This uses reduced dataset size, smaller model, and faster clustering threshold.
 
-Key arguments for `biogrid_exp.py`:
+### Key Arguments
 
 | Argument | Default | Description |
 |----------|---------|-------------|
-| `--plm_path` | `esmc_600m` | Protein language model to use for embeddings |
+| `--plm_path` | `esmc_600m` | pLM for embedding generation |
+| `--similarity_threshold` | `0.4` | CD-HIT clustering threshold |
 | `--batch_size` | `128` | Training batch size |
 | `--max_length` | `512` | Maximum sequence length |
-| `--num_epochs` | `1` | Number of training epochs |
-| `--n_runs` | `5` | Number of training runs with different seeds |
-| `--similarity_threshold` | `0.4` | CD-HIT clustering threshold |
+| `--n_runs` | `5` | Number of seeds per condition |
 | `--save_every` | `5000` | Evaluation frequency (steps) |
-| `--patience` | `5` | Early stopping patience |
-| `--wandb_project` | `biogrid_ppi` | Weights & Biases project name |
-| `--bugfix` | `False` | Quick test mode with reduced dataset and model size |
+| `--reproduce_paper` | `False` | Use exact paper seeds |
 
-## Project Structure
+---
+
+## Code Architecture
 
 ```
 PLMConfounders/
 ├── data/
-│   ├── biogrid.py           # BioGRID data loading and processing
-│   └── data.py              # Dataset and collator classes
+│   ├── biogrid.py          # Data loading, splitting, negative generation
+│   └── data.py             # PyTorch Dataset and Collator classes
 ├── model/
-│   ├── ppi_model.py         # Main PPI prediction model
-│   ├── attention.py         # Attention mechanisms
-│   ├── blocks.py            # Transformer blocks
-│   ├── rotary.py            # Rotary positional embeddings
-│   └── utils.py             # Model utilities
+│   ├── ppi_model.py        # Main PPIModel architecture
+│   ├── attention.py        # Attention mechanisms (MHA, AttentionPooler)
+│   ├── blocks.py           # Transformer blocks
+│   ├── rotary.py           # Rotary positional embeddings
+│   └── utils.py            # Linear layers, normalization utilities
 ├── training/
-│   ├── biogrid_exp.py       # Main training script (NS vs SS experiment)
-│   └── utils.py             # Training utilities
-├── processed_datasets/      # Cached preprocessed datasets
-├── results/                 # Training outputs and checkpoints
-├── sequence_data/           # Raw BioGRID data and sequences
-├── preprint/                # Figures and analysis from the paper
-│   ├── plot_biogrid.py      # Visualization scripts
-│   └── preprint.ipynb       # Analysis notebook
-└── requirements.txt         # Python dependencies
+│   ├── biogrid_exp.py      # Main training script and BiogridBinaryTrainer
+│   └── utils.py            # Argument parsing, seed setting, gradient clipping
+├── processed_datasets/     # Cached train/val/test CSVs
+├── accidental_taxonomist/                # Model checkpoints and metrics logs
+└── sequence_data/          # FASTA files and CD-HIT outputs
 ```
 
-## Key Results
+### Key Components
 
-### Performance Comparison: NS vs SS
+#### Data Pipeline (`data/biogrid.py`)
 
-| Metric | Normal Sampling (NS) | Strategic Sampling (SS) |
-|--------|----------------------|-------------------------|
-| Validation MCC | **0.71** | 0.39 |
-| Test MCC | 0.23 | **0.37** |
+The data pipeline implements rigorous evaluation splits following Park & Marcotte's C3 strategy:
 
-The NS models achieve high validation scores by exploiting phylogenetic distances, but fail on properly sampled test sets. SS models maintain consistent performance and **outperform single-species state-of-the-art** (0.30 MCC on Bernett et al. dataset).
+1. **Sequence clustering**: CD-HIT at 40% identity threshold
+2. **Cluster-based splitting**: Entire clusters assigned to train/val/test (no protein overlap)
+3. **Negative generation**: 
+   - `matching_orgs=False` (NS): Random pairs from different species
+   - `matching_orgs=True` (SS): Random pairs within same species
+4. **Test set**: Always uses SS negatives to detect cheating
 
-### Taxonomic Classification Performance
+```python
+# Core negative generation logic (simplified)
+if matching_orgs:
+    org_2 = org_1  # Same species
+else:
+    org_2 = sample_different_species(org_1)  # Different species
+```
 
-pLM embeddings can predict taxonomic origin with surprising accuracy:
+#### Model Architecture (`model/ppi_model.py`)
 
-| Level | # Classes | Best F1 Score | Model |
-|-------|-----------|---------------|-------|
-| Domain | 3 | 0.97 | ProtT5 |
-| Kingdom | 17 | 0.69 | ESMC-600M |
-| Phylum | 68 | 0.49 | ProtT5 |
-| Species | 618 | 0.18 | ESMC-600M |
-| **Different Species (Binary)** | **2** | **0.87** | **ESMC-600M** |
+The `PPIModel` processes two protein sequences through parallel encoder tracks before interaction modeling:
 
-The high performance on the binary "different species" task (0.87 F1) explains why models can cheat on PPI datasets.
+```python
+class PPIModel(PreTrainedModel):
+    def forward(self, a, b, a_mask, b_mask):
+        # Parallel encoding tracks
+        a = self.featurize_a(a, a_mask)  # (B, n_tokens, D)
+        b = self.featurize_b(b, b_mask)  # (B, n_tokens, D)
+        
+        # Concatenate and process through transformer blocks
+        x = torch.cat([a, b], dim=1)  # (B, 2*n_tokens, D)
+        x = self.block_1(x)  # ... hierarchical dimension reduction
+        
+        # Final prediction
+        logits = self.final_proj(x).mean(dim=1)  # (B, 1)
+        return PPIOutput(logits=logits)
+```
 
-## Implications
+#### Attention Pooling (`model/attention.py`)
 
-This work has broad implications for protein machine learning:
+Variable-length sequences are pooled to fixed-size representations via learned cross-attention:
 
-1. **PPI Prediction**: Always use strategic sampling for multi-species datasets
-2. **Any Supervised Protein Task**: Check for taxonomic biases in label distributions
-3. **Dataset Design**: Consider phylogenetic distances when constructing train/test splits
-4. **Model Evaluation**: Test on rigorous same-species splits to detect taxonomic shortcuts
-5. **Benchmark Caution**: High multi-species performance may indicate confounding, not genuine learning
+```python
+class AttentionPooler(nn.Module):
+    """(B, L, D) → (B, n_tokens, D) via learned query tokens"""
+    def forward(self, x, attention_mask):
+        q = self.Wq(self.Q)  # Learned queries: (1, n_tokens, D)
+        k, v = self.Wk(x), self.Wv(x)  # Keys/values from input
+        return scaled_dot_product_attention(q, k, v, attn_mask)
+```
 
-### Recommended Best Practices
+---
 
-✅ **Do:**
-- Sample negatives from within the same species
-- Use C3 splits (no sequence overlap between train/val/test)
-- Cluster at 40% similarity to prevent memorization
-- Report performance on both same-species and multi-species test sets
-- Check label distributions across taxonomic ranks
+## Model Architecture
 
-❌ **Don't:**
-- Randomly shuffle protein pairs to generate negatives
-- Trust >90% accuracy on multi-species PPI datasets
-- Ignore phylogenetic distances in dataset construction
-- Use subcellular localization-based negatives without controls
+The PPI prediction model is a hierarchical transformer that processes pLM embeddings:
+
+```
+Input: Protein A embeddings (batch_size, l_a, 1152)
+       Protein B embeddings (batch_size, l_b, 1152)
+                    ↓
+┌──────────────────────────────────────────────┐
+│  Parallel Encoder Tracks (separate weights)  │
+│   ┌─────────────────┐  ┌─────────────────┐   │
+│   │ Linear: 1152→512│  │ Linear: 1152→512│   │
+│   │ Transformer Blk │  │ Transformer Blk │   │
+│   │ AttentionPooler │  │ AttentionPooler │   │
+│   │   (L→32 tokens) │  │   (L→32 tokens) │   │
+│   └────────┬────────┘  └────────┬────────┘   │
+│            │                    │            │
+│            └──────┬─────────────┘            │
+│                   ↓                          │
+│         Concatenate: (B, 64, 512)            │
+└──────────────────────────────────────────────┘
+                    ↓
+┌──────────────────────────────────────────────┐
+│  Interaction Modeling (4 Transformer Blocks) │
+│  512 → 256 → 128 → 64 (progressive reduction)│
+└──────────────────────────────────────────────┘
+                    ↓
+           Mean Pool → Linear → Logit (b, 1)
+```
+
+**Key design choices**:
+- **Frozen pLM embeddings**: ESMC-600M embeddings extracted offline
+- **Separate encoder tracks**: Each protein has its own encoder weights (not shared)
+- **Random input swapping**: During training, A↔B orientation is randomly swapped to prevent order bias
+- **Attention pooling**: Handles variable-length sequences with minimal information loss
+- **Rotary positional embeddings**: Position-aware attention without absolute encodings
+- **Hierarchical reduction**: Progressive dimensionality reduction through transformer blocks
+
+---
+
+## Dataset Construction
+
+### Splitting Strategy (C3)
+
+Following Park & Marcotte's + Bernett's strictest evaluation protocol:
+
+1. **Cluster all proteins** at 40% sequence identity
+2. **Assign clusters** (not individual proteins) to splits
+3. **Guarantee**: No protein in valid or test appears in train (even at 40% similarity). No overlap in valid or test either.
+
+### Negative Sampling Comparison
+
+| Approach | Training Negatives | Validation Negatives | Test Negatives |
+|----------|-------------------|---------------------|----------------|
+| **Normal Sampling (NS)** | Cross-species (~70%) | Cross-species | Same-species |
+| **Strategic Sampling (SS)** | Same-species only | Same-species | Same-species |
+
+The test set always uses same-species negatives to reveal whether models learned taxonomy vs. PPI.
+
+### Dataset Statistics
+
+| Split | Examples | Positives | Negatives | Unique Proteins |
+|-------|----------|-----------|-----------|-----------------|
+| Train | 4,523,432 | 2,261,716 | 2,261,716 | ~70,000 |
+| Valid | 10,070 | 5,035 | 5,035 | ~3,000 |
+| Test | 10,034 | 5,017 | 5,017 | ~3,000 |
+
+---
+
+## Results
+
+### NS vs. SS Performance Comparison
+
+| Metric | NS (Validation) | NS (Test) | SS (Validation) | SS (Test) |
+|--------|-----------------|-----------|-----------------|-----------|
+| MCC | **0.71** | 0.23 | 0.39 | **0.37** |
+| Accuracy | 85% | 62% | 70% | 68% |
+| F1 | 0.87 | 0.61 | 0.70 | 0.69 |
+| ROC-AUC | 0.92 | 0.63 | 0.75 | 0.73 |
+
+The dramatic drop in NS performance (0.71 → 0.23 MCC) when evaluated on same-species negatives confirms the accidental taxonomist hypothesis.
+
+### Comparison to Prior Work
+
+| Method | Dataset | Test MCC |
+|--------|---------|----------|
+| Bernett et al. SOTA | Human-only | 0.30 |
+| **This work (SS)** | Multi-species | **0.37** |
+
+Strategic sampling enables multi-species training that genuinely improves generalization.
+
+---
 
 ## Citation
-
-If you use this code or findings in your research, please cite:
 
 ```bibtex
 @article{hallee2025accidental,
@@ -186,43 +295,34 @@ If you use this code or findings in your research, please cite:
 }
 ```
 
+---
+
 ## Data Availability
 
-- **Processed datasets**: Available in `processed_datasets/` after running training scripts
-- **BioGRID source**: Downloaded from [thebiogrid.org](https://thebiogrid.org/)
-- **Model weights**: Saved to `results/` after training
-- **Protify datasets / code**: Available at [Protify repository](https://github.com/Gleghorn-Lab/Protify)
+| Resource | Location |
+|----------|----------|
+| BioGRID source data | [Synthyra/BIOGRID](https://huggingface.co/datasets/Synthyra/BIOGRID) |
+| Processed datasets | `processed_datasets/` (generated on first run) |
+| Taxonomy probe datasets | [GleghornLab/Protify](https://huggingface.co/collections/GleghornLab/protify) |
+| Model checkpoints | `accidental_taxonomist_results/biogrid_species_experiment/` |
 
-## Contributing
-
-We welcome contributions! If you find additional confounding factors or improvements to dataset construction, please open an issue or pull request.
+---
 
 ## Authors
 
 - **Logan Hallee** - University of Delaware & Synthyra - [lhallee@udel.edu](mailto:lhallee@udel.edu)
-- **Tamar Peleg** - University of Delaware - [tamarp@udel.edu](mailto:tamarp@udel.edu)
-- **Nikolaos Rafailidis** - University of Delaware - [nrafaili@udel.edu](mailto:nrafaili@udel.edu)
-- **Jason P. Gleghorn** - University of Delaware & Synthyra - [gleghorn@udel.edu](mailto:gleghorn@udel.edu)
+- **Tamar Peleg** - University of Delaware
+- **Nikolaos Rafailidis** - University of Delaware
+- **Jason P. Gleghorn** - University of Delaware & Synthyra
 
 ## Acknowledgements
 
-This work was supported by:
-- University of Delaware Graduate College (Unidel Distinguished Graduate Scholar Award)
-- National Science Foundation (NAIRR pilot 240064)
-- National Institutes of Health (NIGMS T32GM142603, R01HL178817, R01HL133163, R01HL145147)
-
-Special thanks to Katherine M. Nelson, Ph.D., for reviewing and commenting on drafts of the manuscript.
+This work was supported by the University of Delaware Graduate College (Unidel Distinguished Graduate Scholar Award), National Science Foundation (NAIRR pilot 240064), and National Institutes of Health (NIGMS T32GM142603, R01HL178817, R01HL133163, R01HL145147).
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Conflict of Interest
-
-LH and JPG are co-founders of and have an equity stake in Synthyra, PBLLC.
+MIT License. See LICENSE for details.
 
 ---
 
 **Questions?** Open an issue or contact [lhallee@udel.edu](mailto:lhallee@udel.edu)
-
-**Found this useful?** ⭐ Star the repository to help others discover this work!
