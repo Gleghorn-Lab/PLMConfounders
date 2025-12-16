@@ -53,6 +53,7 @@ def parse_args():
     parser.add_argument("--plm_path", type=str, default="Synthyra/ESMplusplus_large", help="Path to the PLM to use for training")
     parser.add_argument("--save_path", type=str, default="lhallee/pstring_test", help="Path to save the model and report to wandb")
     parser.add_argument("--wandb_project", type=str, default="P-STRING", help="Wandb project name")
+    parser.add_argument("--reproduce_paper", action="store_true", help="Run training with seeds from paper")
 
     # training hypers
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")

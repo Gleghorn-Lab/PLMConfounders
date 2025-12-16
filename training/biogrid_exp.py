@@ -551,7 +551,10 @@ if __name__ == "__main__":
         args.num_epochs = 1
         args.n_runs = 2
 
-    seeds = [random.randint(0, 1000) for _ in range(n_runs)]
+    if args.reproduce_paper == 5: # to reproduce the paper
+        seeds = [314, 550, 576, 669, 842]
+    else:
+        seeds = [random.randint(0, 1000) for _ in range(n_runs)]
 
     # Prebuild and cache both datasets (matching_orgs False and True) once
     print("Prebuilding cached BIOGRID splits for matching_orgs=False and matching_orgs=True ...")
