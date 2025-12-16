@@ -90,10 +90,10 @@ This executes:
 2. Clusters sequences at 40% identity using CD-HIT (Docker)
 3. Constructs C3 train/validation/test splits (no sequence overlap)
 4. Generates negatives via Normal Sampling (NS) and Strategic Sampling (SS)
-5. Trains 5 models per condition with seeds `[314, 550, 576, 669, 842]`
+5. Trains 5 models per condition with seeds (which were originally randomly chosen) `[314, 550, 576, 669, 842]`
 6. Evaluates all models on SS test set to reveal cheating behavior
 
-**Hardware requirements**: Full training requires ~24GB GPU memory (tested on GH200). Training time: ~4 hours per model.
+**Hardware requirements**: Full training requires ~20GB GPU memory, ~300 GB of system memory, and takes ~4 hours per training run on a GH200.
 
 ### Quick Testing
 
