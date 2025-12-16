@@ -74,6 +74,11 @@ pip install -r requirements.txt
 
 ### Full Paper Reproduction
 
+**Note**: Before running the experiments, unzip the datasets in `processed_datasets/`:
+- `SS_train.zip` → `split_with_sim_biogrid_0.4_True_train.csv`
+- `NS_train.zip` → `split_with_sim_biogrid_0.4_False_train.csv`
+- `eval_sets.zip` → `split_with_sim_biogrid_0.4_True_val.csv`, `split_with_sim_biogrid_0.4_True_test.csv` `split_with_sim_biogrid_0.4_False_val.csv`, `split_with_sim_biogrid_0.4_False_test.csv` 
+
 To reproduce the complete NS vs. SS experiment from the paper:
 
 ```bash
