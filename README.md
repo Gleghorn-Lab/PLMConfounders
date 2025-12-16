@@ -42,6 +42,7 @@ This creates a strong correlation between label and phylogenetic distance that m
 | **Phylogenetic bias in datasets** | Only ~31% of randomly sampled negatives share species origin |
 | **pLMs encode taxonomy** | 0.87 F1 score distinguishing same vs. different species pairs |
 | **Models exploit this signal** | NS models: 0.71 MCC (validation) → 0.23 MCC (SS test set) |
+| **Reward hacking in training dynamics** | NS positive predictions reach 0.94 vs 0.75 for SS |
 | **Strategic sampling prevents cheating** | SS models maintain consistent 0.37-0.39 MCC across splits |
 | **Multi-species data still helps** | SS models outperform single-species SOTA (0.37 vs 0.30 MCC) |
 
@@ -278,6 +279,24 @@ The test set always uses same-species negatives to reveal whether models learned
 
 The dramatic drop in NS performance (0.71 → 0.23 MCC) when evaluated on same-species negatives confirms the accidental taxonomist hypothesis.
 
+### Training Dynamics Reveal Reward Hacking
+
+Analysis of training dynamics exposes how NS models exploit phylogenetic signals:
+
+| Metric | NS | SS |
+|--------|----|----|
+| Training Loss | **0.38** (lower) | 0.54 |
+| Avg. Positive Prediction | 0.94 | 0.75 |
+| Avg. Negative Prediction | ~0.50 | ~0.50 |
+
+**Key observations:**
+- NS models achieve lower training loss by exploiting the phylogenetic shortcut
+- NS positive predictions approach 0.94 (extreme confidence), indicating reward hacking behavior
+- Both approaches show similar difficulty classifying negatives (~0.50 probability)
+- The divergent trajectories are statistically significant (99.99% CI bands are non-overlapping)
+
+![Training Dynamics](accidental_taxonomist_results/wandb_figure/training_trends_comparison.png)
+
 ### Comparison to Prior Work
 
 | Method | Dataset | Test MCC |
@@ -286,6 +305,12 @@ The dramatic drop in NS performance (0.71 → 0.23 MCC) when evaluated on same-s
 | **This work (SS)** | Multi-species | **0.37** |
 
 Strategic sampling enables multi-species training that genuinely improves generalization.
+
+**Note**: All training runs can be viewed in detail on Weights and Biases.
+
+[Report](https://wandb.ai/lhallee/Accidental%20Taxonomists%20PPI/reports/Accidental-Taxonomists-PPI--VmlldzoxNTM5MTkwNQ)
+
+[Raw](https://wandb.ai/lhallee/Accidental%20Taxonomists%20PPI).
 
 ---
 
@@ -310,6 +335,7 @@ Strategic sampling enables multi-species training that genuinely improves genera
 | Processed datasets | `processed_datasets/` (generated on first run) |
 | Taxonomy probe datasets | [GleghornLab/Protify](https://huggingface.co/collections/GleghornLab/protify) |
 | Model checkpoints | `accidental_taxonomist_results/biogrid_species_experiment/` |
+| Training runs & metrics | [Wandb Project](https://wandb.ai/lhallee/Accidental%20Taxonomists%20PPI) |
 
 ---
 
