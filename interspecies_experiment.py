@@ -34,7 +34,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--plm_path",
         type=str,
-        default="Synthyra/ESMC_600M",
+        default="Synthyra/ESMplusplus_small",
     )
     parser.add_argument(
         "--batch_size",
@@ -79,7 +79,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--min_interspecies",
         type=int,
-        default=50,
+        default=100,
     )
     parser.add_argument(
         "--bugfix",
