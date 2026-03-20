@@ -11,6 +11,7 @@ import pandas as pd
 import torch
 import torch.nn as nn
 from datasets import load_dataset
+from huggingface_hub import login
 from sklearn.metrics import (
     accuracy_score,
     f1_score,
@@ -28,13 +29,21 @@ from data.data_clustering import cluster_sequences
 from model.ppi_model import PPIConfig, PPIModel
 from training.utils import set_seed, AutoGradClipper
 
+global WANDB_AVAILABLE
+try:
+    import wandb
+    WANDB_AVAILABLE = True
+except ImportError:
+    wandb = None
+    WANDB_AVAILABLE = False
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Interspecies PPI experiment")
     parser.add_argument(
         "--plm_path",
         type=str,
-        default="Synthyra/ESMplusplus_small",
+        default="Synthyra/ESMplusplus_large",
     )
     parser.add_argument(
         "--batch_size",
@@ -84,6 +93,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--bugfix",
         action="store_true",
+    )
+    parser.add_argument(
+        "--token",
+        type=str,
+        default=None,
+    )
+    parser.add_argument(
+        "--wandb_project",
+        type=str,
+        default="PLMConfounders",
     )
     return parser.parse_args()
 
@@ -329,9 +348,15 @@ def train_model(
 
         global_step += 1
 
+        if global_step % 100 == 0:
+            if WANDB_AVAILABLE:
+                wandb.log({"train/loss": loss.item()}, step=global_step)
+
         if global_step % 2000 == 0:
             val_mcc = evaluate_mcc(model, valid_loader, device)
             print(f"  Step {global_step}  loss={loss.item():.4f}  val_mcc={val_mcc:.4f}")
+            if WANDB_AVAILABLE:
+                wandb.log({"valid/mcc": val_mcc}, step=global_step)
             if val_mcc > best_mcc:
                 best_mcc = val_mcc
                 torch.save(model.state_dict(), os.path.join(save_dir, "best_model.pt"))
@@ -460,6 +485,9 @@ def main():
     args = parse_args()
     set_seed(42)
 
+    if args.token is not None:
+        login(args.token)
+
     results_dir = "results/interspecies_experiment"
     os.makedirs(results_dir, exist_ok=True)
 
@@ -497,12 +525,18 @@ def main():
 
     # 6. Train SS model
     print("\n=== Training SS model ===")
+    if WANDB_AVAILABLE:
+        wandb.init(project=args.wandb_project, name="interspecies_SS", config=vars(args))
     set_seed(42)
     ss_model = build_model(args)
     ss_model = train_model(ss_model, ss_train, ss_valid, seq_dict, embed_dict, args, os.path.join(results_dir, "ss_model"))
+    if WANDB_AVAILABLE:
+        wandb.finish()
 
     # 7. Train NS model
     print("\n=== Training NS model ===")
+    if WANDB_AVAILABLE:
+        wandb.init(project=args.wandb_project, name="interspecies_NS", config=vars(args))
     set_seed(42)
     ns_model = build_model(args)
     ns_model = train_model(ns_model, ns_train, ns_valid, seq_dict, embed_dict, args, os.path.join(results_dir, "ns_model"))
@@ -511,6 +545,20 @@ def main():
     print("\n=== Evaluation ===")
     ss_results = full_evaluation(ss_model, ss_test, seq_dict, embed_dict, args, device)
     ns_results = full_evaluation(ns_model, ns_test, seq_dict, embed_dict, args, device)
+    if WANDB_AVAILABLE:
+        wandb.finish()
+
+    # Log final results as a summary run
+    if WANDB_AVAILABLE:
+        wandb.init(project=args.wandb_project, name="interspecies_results", config=vars(args))
+        for model_name, res in [("SS", ss_results), ("NS", ns_results)]:
+            for subgroup in ["all", "interspecies", "intraspecies"]:
+                r = res[subgroup]
+                for metric_name, metric_val in r.items():
+                    if metric_name == "n":
+                        continue
+                    wandb.log({f"test/{model_name}/{subgroup}/{metric_name}": metric_val})
+        wandb.finish()
 
     # 9. Report
     rows = []
