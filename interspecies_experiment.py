@@ -48,12 +48,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--batch_size",
         type=int,
-        default=128,
+        default=48,
     )
     parser.add_argument(
         "--lr",
         type=float,
-        default=1e-4,
+        default=5e-5,
     )
     parser.add_argument(
         "--max_length",
