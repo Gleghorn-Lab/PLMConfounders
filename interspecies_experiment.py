@@ -3,6 +3,7 @@ Train SS and NS PPI models on BIOGRID-MV, then evaluate on interspecies PPI subg
 """
 import argparse
 import os
+import pickle
 import random
 
 import numpy as np
@@ -40,8 +41,8 @@ except ImportError:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Interspecies PPI experiment")
     parser.add_argument("--plm_path", type=str, default="Synthyra/ESMplusplus_large")
-    parser.add_argument("--batch_size", type=int, default=48)
-    parser.add_argument("--lr", type=float, default=5e-5)
+    parser.add_argument("--batch_size", type=int, default=128)
+    parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--max_length", type=int, default=512)
     parser.add_argument("--hidden_size", type=int, default=512)
     parser.add_argument("--output_size", type=int, default=128)
@@ -445,32 +446,54 @@ def main():
     results_dir = "results/interspecies_experiment"
     os.makedirs(results_dir, exist_ok=True)
 
-    # 1. Load data
-    positives, seq_dict, interaction_set = load_biogrid_mv(args.bugfix)
+    cache_path = os.path.join(results_dir, "cached_splits.pkl")
+    if os.path.exists(cache_path):
+        print(f"Loading cached dataset from {cache_path}")
+        with open(cache_path, "rb") as f:
+            cached = pickle.load(f)
+        seq_dict = cached["seq_dict"]
+        ss_train = cached["ss_train"]
+        ss_valid = cached["ss_valid"]
+        ss_test = cached["ss_test"]
+        ns_train = cached["ns_train"]
+        ns_valid = cached["ns_valid"]
+        ns_test = cached["ns_test"]
+        print(f"  SS train={len(ss_train)}  NS train={len(ns_train)}  test={len(ss_test)}")
+    else:
+        # 1. Load data
+        positives, seq_dict, interaction_set = load_biogrid_mv(args.bugfix)
 
-    # 2. Cluster
-    cluster_dict = cluster_sequences(
-        seq_dict,
-        method="mmseqs2",
-        cluster_percentage=0.4,
-        coverage=0.8,
-        identifier="biogrid_mv",
-        base_path="data",
-    )
-    print(f"Clustering: {len(seq_dict)} sequences -> {len(cluster_dict)} clusters")
+        # 2. Cluster
+        cluster_dict = cluster_sequences(
+            seq_dict,
+            method="mmseqs2",
+            cluster_percentage=0.4,
+            coverage=0.8,
+            identifier="biogrid_mv",
+            base_path="data",
+        )
+        print(f"Clustering: {len(seq_dict)} sequences -> {len(cluster_dict)} clusters")
 
-    # 3. Interspecies-aware C3 split
-    train_pos, valid_pos, test_pos = interspecies_aware_split(
-        positives, cluster_dict, args.min_test_rows, args.min_interspecies,
-    )
+        # 3. Interspecies-aware C3 split
+        train_pos, valid_pos, test_pos = interspecies_aware_split(
+            positives, cluster_dict, args.min_test_rows, args.min_interspecies,
+        )
 
-    # 4. Generate negatives for SS and NS
-    ss_train, ss_valid, ss_test = add_negatives(train_pos, valid_pos, test_pos, interaction_set, matching_orgs=True)
-    ns_train, ns_valid, ns_test = add_negatives(train_pos, valid_pos, test_pos, interaction_set, matching_orgs=False)
+        # 4. Generate negatives for SS and NS
+        ss_train, ss_valid, ss_test = add_negatives(train_pos, valid_pos, test_pos, interaction_set, matching_orgs=True)
+        ns_train, ns_valid, ns_test = add_negatives(train_pos, valid_pos, test_pos, interaction_set, matching_orgs=False)
 
-    # Shared test set: test positives are the same, test negatives use matching_orgs=True for both
-    # Verify test sets are identical
-    assert ss_test["IdA"].tolist() == ns_test["IdA"].tolist(), "Test sets should be identical"
+        # Shared test set: test positives are the same, test negatives use matching_orgs=True for both
+        assert ss_test["IdA"].tolist() == ns_test["IdA"].tolist(), "Test sets should be identical"
+
+        # Cache processed splits
+        with open(cache_path, "wb") as f:
+            pickle.dump({
+                "seq_dict": seq_dict,
+                "ss_train": ss_train, "ss_valid": ss_valid, "ss_test": ss_test,
+                "ns_train": ns_train, "ns_valid": ns_valid, "ns_test": ns_test,
+            }, f)
+        print(f"Cached dataset to {cache_path}")
 
     # 5. Embed
     embed_dict = embed_sequences(seq_dict, args.plm_path, args.max_length)
