@@ -34,37 +34,25 @@ def count_organism_pairs(org_a: list[str], org_b: list[str]) -> Counter:
 def run_shuffles(
     org_a: list[str],
     org_b: list[str],
-    seq_a: list[str],
-    seq_b: list[str],
     n_shuffles: int,
     seed: int,
 ) -> tuple[list[float], Counter]:
     rng = np.random.default_rng(seed)
-    n = len(org_a)
 
-    all_seqs = seq_a + seq_b
-    all_orgs = org_a + org_b
-
-    # Build sequence -> organism mapping
-    seq_to_org: dict[str, str] = {}
-    for seq, org in zip(all_seqs, all_orgs):
-        seq_to_org[seq] = org
-
-    unique_seqs = list(set(all_seqs))
+    arr_a = np.array(org_a)
+    arr_b = np.array(org_b)
 
     same_org_pcts: list[float] = []
     representative_neg_pairs: Counter = Counter()
 
     for i in range(n_shuffles):
-        shuffled = unique_seqs.copy()
-        rng.shuffle(shuffled)
+        shuf_a = arr_a.copy()
+        shuf_b = arr_b.copy()
+        rng.shuffle(shuf_a)
+        rng.shuffle(shuf_b)
 
-        # Create random pairs by pairing consecutive sequences
-        neg_a_orgs = []
-        neg_b_orgs = []
-        for j in range(0, min(2 * n, len(shuffled) - 1), 2):
-            neg_a_orgs.append(seq_to_org[shuffled[j]])
-            neg_b_orgs.append(seq_to_org[shuffled[j + 1]])
+        neg_a_orgs = shuf_a.tolist()
+        neg_b_orgs = shuf_b.tolist()
 
         pct = compute_same_organism_pct(neg_a_orgs, neg_b_orgs)
         same_org_pcts.append(pct)
@@ -151,10 +139,8 @@ def main() -> None:
     print("Loading BioGRID dataset...")
     ds = load_biogrid()
 
-    org_a = ds["OrgA"]
-    org_b = ds["OrgB"]
-    seq_a = ds["SeqA"]
-    seq_b = ds["SeqB"]
+    org_a = list(ds["OrgA"])
+    org_b = list(ds["OrgB"])
     n = len(org_a)
 
     # Positive pair statistics
@@ -162,11 +148,11 @@ def main() -> None:
     pos_pairs = count_organism_pairs(org_a, org_b)
 
     unique_orgs = set(org_a) | set(org_b)
-    unique_seqs = set(seq_a) | set(seq_b)
+    unique_proteins = set(ds["A"]) | set(ds["B"])
 
     print(f"\nTotal positive pairs: {n:,}")
     print(f"Unique organisms: {len(unique_orgs):,}")
-    print(f"Unique sequences: {len(unique_seqs):,}")
+    print(f"Unique proteins: {len(unique_proteins):,}")
     print(f"Same-organism pairs in positives: {pos_same_org_pct:.2f}%")
 
     print(f"\nTop 10 organism pairs in positives:")
@@ -177,7 +163,7 @@ def main() -> None:
     # Shuffle analysis
     print(f"\nRunning {args.n_shuffles} shuffles...")
     same_org_pcts, neg_pairs = run_shuffles(
-        org_a, org_b, seq_a, seq_b, args.n_shuffles, args.seed
+        org_a, org_b, args.n_shuffles, args.seed
     )
 
     print(f"Shuffled same-organism %: mean={np.mean(same_org_pcts):.2f}, std={np.std(same_org_pcts):.2f}")

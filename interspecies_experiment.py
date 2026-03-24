@@ -4,7 +4,6 @@ Train SS and NS PPI models on BIOGRID-MV, then evaluate on interspecies PPI subg
 import argparse
 import os
 import random
-import time
 
 import numpy as np
 import pandas as pd
@@ -28,6 +27,7 @@ from data.data import BiogridDataset, BiogridCollator
 from data.data_clustering import cluster_sequences
 from model.ppi_model import PPIConfig, PPIModel
 from training.utils import set_seed, AutoGradClipper
+
 
 global WANDB_AVAILABLE
 try:
@@ -95,7 +95,12 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
     )
     parser.add_argument(
-        "--token",
+        "--hf_token",
+        type=str,
+        default=None,
+    )
+    parser.add_argument(
+        "--wandb_token",
         type=str,
         default=None,
     )
