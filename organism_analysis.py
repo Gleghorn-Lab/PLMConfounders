@@ -8,6 +8,41 @@ import numpy as np
 from datasets import load_dataset
 from matplotlib import pyplot as plt
 
+SPECIES_ABBREV: dict[str, str] = {
+    "Homo sapiens": "Hs",
+    "Saccharomyces cerevisiae": "Sc",
+    "Escherichia coli": "Ec",
+    "Schizosaccharomyces pombe": "Sp",
+    "Arabidopsis thaliana": "At",
+    "Mus musculus": "Mm",
+    "Drosophila melanogaster": "Dm",
+    "Caenorhabditis elegans": "Ce",
+    "Severe acute respiratory syndrome coronavirus 2": "SCV2",
+    "Rattus norvegicus": "Rn",
+    "Xenopus laevis": "Xl",
+    "Danio rerio": "Dr",
+    "Gallus gallus": "Gg",
+    "Sus scrofa": "Ss",
+    "Bos taurus": "Bt",
+    "Dictyostelium discoideum": "Dd",
+    "Plasmodium falciparum": "Pf",
+    "Human immunodeficiency virus 1": "HIV1",
+    "Human immunodeficiency virus 2": "HIV2",
+}
+
+
+def abbreviate_species(name: str) -> str:
+    if name in SPECIES_ABBREV:
+        return SPECIES_ABBREV[name]
+    parts = name.split()
+    return "".join(p[0].upper() for p in parts if p)
+
+
+def abbreviate_pair(pair_key: str) -> str:
+    parts = pair_key.split(" - ")
+    assert len(parts) == 2
+    return f"{abbreviate_species(parts[0])}-{abbreviate_species(parts[1])}"
+
 
 def load_biogrid() -> dict:
     ds = load_dataset("Synthyra/BIOGRID", split="train")
@@ -68,38 +103,110 @@ def plot_results(
     pos_same_org_pct: float,
     pos_pairs: Counter,
     neg_pairs: Counter,
-    top_n: int,
     output_path: str,
+    min_freq_pct: float = 0.1,
 ) -> None:
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+    fig = plt.figure(figsize=(16, 8))
+    ax1 = fig.add_subplot(1, 2, 1)
+    ax2 = fig.add_subplot(1, 2, 2, projection="polar")
 
-    # Panel A: Histogram of same-organism percentage across shuffles
-    ax1.hist(same_org_pcts, bins=20, color="#4878CF", edgecolor="black", alpha=0.8)
-    ax1.axvline(pos_same_org_pct, color="red", linestyle="--", linewidth=2, label=f"Positives: {pos_same_org_pct:.1f}%")
-    ax1.set_xlabel("Same-Organism Pairs (%)", fontsize=12)
-    ax1.set_ylabel("Count (out of 100 shuffles)", fontsize=12)
-    ax1.set_title("A) Same-Organism % in Shuffled Negatives vs. Positives", fontsize=13)
-    ax1.legend(fontsize=11)
+    # --- Panel A: Same-species vs cross-species stacked bars ---
+    neg_mean = np.mean(same_org_pcts)
+    neg_std = np.std(same_org_pcts)
+    pos_same = pos_same_org_pct
+    pos_cross = 100.0 - pos_same
+    neg_same = neg_mean
+    neg_cross = 100.0 - neg_mean
 
-    # Panel B: Grouped bar chart of top organism pairs
-    top_keys = [k for k, _ in pos_pairs.most_common(top_n)]
+    c_same = "#2b8c6e"
+    c_cross = "#e05e5e"
+
+    bars_same = ax1.bar(
+        [0, 1], [pos_same, neg_same],
+        color=c_same, width=0.55, label="Same-species",
+    )
+    bars_cross = ax1.bar(
+        [0, 1], [pos_cross, neg_cross],
+        bottom=[pos_same, neg_same],
+        color=c_cross, width=0.55, label="Cross-species",
+    )
+    ax1.errorbar(
+        1, neg_same, yerr=neg_std,
+        fmt="none", ecolor="black", capsize=5, capthick=1.5, linewidth=1.5,
+    )
+
+    ax1.set_xticks([0, 1])
+    ax1.set_xticklabels(["Positives", "Shuffled\nNegatives"], fontsize=12)
+    ax1.set_ylabel("Proportion of pairs (%)", fontsize=12)
+    ax1.set_ylim(0, 105)
+    ax1.set_title("A", fontsize=14, fontweight="bold", loc="left")
+    ax1.legend(fontsize=10, loc="upper right")
+    ax1.spines["top"].set_visible(False)
+    ax1.spines["right"].set_visible(False)
+
+    for bar_set, values in [(bars_same, [pos_same, neg_same]), (bars_cross, [pos_cross, neg_cross])]:
+        for bar, val in zip(bar_set, values):
+            if val >= 5:
+                ax1.text(
+                    bar.get_x() + bar.get_width() / 2,
+                    bar.get_y() + bar.get_height() / 2,
+                    f"{val:.1f}%",
+                    ha="center", va="center", fontsize=10, fontweight="bold", color="white",
+                )
+
+    # --- Panel B: Radial bar chart of organism pair frequencies ---
     total_pos = sum(pos_pairs.values())
     total_neg = sum(neg_pairs.values())
 
-    pos_freqs = [100.0 * pos_pairs[k] / total_pos for k in top_keys]
-    neg_freqs = [100.0 * neg_pairs.get(k, 0) / total_neg for k in top_keys]
+    all_keys = set(pos_pairs.keys()) | set(neg_pairs.keys())
+    filtered_keys = [
+        k for k in all_keys
+        if 100.0 * pos_pairs[k] / total_pos >= min_freq_pct
+        or 100.0 * neg_pairs[k] / total_neg >= min_freq_pct
+    ]
+    filtered_keys.sort(key=lambda k: pos_pairs[k], reverse=True)
 
-    x = np.arange(len(top_keys))
-    width = 0.35
+    n_pairs = len(filtered_keys)
+    pos_freqs = np.array([100.0 * pos_pairs[k] / total_pos for k in filtered_keys])
+    neg_freqs = np.array([100.0 * neg_pairs[k] / total_neg for k in filtered_keys])
+    labels = [abbreviate_pair(k) for k in filtered_keys]
 
-    ax2.bar(x - width / 2, pos_freqs, width, label="Positives", color="#4878CF", edgecolor="black")
-    ax2.bar(x + width / 2, neg_freqs, width, label="Shuffled Negatives", color="#E24A33", edgecolor="black")
-    ax2.set_xlabel("Organism Pair", fontsize=12)
-    ax2.set_ylabel("Frequency (%)", fontsize=12)
-    ax2.set_title("B) Top Organism Pair Frequencies: Positives vs. Negatives", fontsize=13)
-    ax2.set_xticks(x)
-    ax2.set_xticklabels(top_keys, rotation=45, ha="right", fontsize=9)
-    ax2.legend(fontsize=11)
+    angles = np.linspace(0, 2 * np.pi, n_pairs, endpoint=False)
+    bar_width = 2 * np.pi / n_pairs * 0.8
+
+    c_pos = "#3a7ebf"
+    c_neg = "#e8873a"
+
+    # Log-transform to make small bars visible alongside dominant pairs
+    r_min = np.log10(0.05)  # center of chart
+    log_pos = np.log10(pos_freqs + 0.01) - r_min
+    log_neg = np.log10(neg_freqs + 0.01) - r_min
+    log_pos = np.maximum(log_pos, 0)
+    log_neg = np.maximum(log_neg, 0)
+
+    ax2.bar(angles, log_pos, width=bar_width, color=c_pos, alpha=0.65, label="Positives", zorder=2)
+    ax2.bar(angles, log_neg, width=bar_width, color=c_neg, alpha=0.65, label="Shuffled Negatives", zorder=2)
+    ax2.set_rlim(bottom=0)
+
+    ax2.set_xticks(angles)
+    ax2.set_xticklabels(labels, fontsize=7)
+    ax2.set_title("B", fontsize=14, fontweight="bold", loc="left", pad=20)
+    ax2.legend(fontsize=9, loc="upper right", bbox_to_anchor=(1.35, 1.15))
+
+    r_ticks = [np.log10(v) - r_min for v in [0.1, 1, 10]]
+    ax2.set_rticks(r_ticks)
+    ax2.set_yticklabels([""] * len(r_ticks))
+    # Draw radial labels manually with background boxes, positioned at bottom of chart
+    label_angle = np.pi
+    for val, label in zip([0.1, 1, 10], ["0.1%", "1%", "10%"]):
+        ax2.text(
+            label_angle, np.log10(val) - r_min, label,
+            ha="center", va="center", fontsize=8, fontweight="bold",
+            bbox=dict(boxstyle="round,pad=0.15", facecolor="white", edgecolor="gray", alpha=0.9),
+            zorder=10,
+        )
+    ax2.set_theta_offset(np.pi / 2)
+    ax2.set_theta_direction(-1)
 
     plt.tight_layout()
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -121,12 +228,6 @@ def main() -> None:
         type=int,
         default=42,
         help="Random seed for reproducibility.",
-    )
-    parser.add_argument(
-        "--top_n",
-        type=int,
-        default=15,
-        help="Number of top organism pairs to show in bar chart.",
     )
     parser.add_argument(
         "--output",
@@ -180,7 +281,6 @@ def main() -> None:
         pos_same_org_pct,
         pos_pairs,
         neg_pairs,
-        args.top_n,
         args.output,
     )
 

@@ -211,7 +211,7 @@ def embed_sequences(
         print(f"Loading cached embeddings from {save_path}")
         return torch.load(save_path, weights_only=False)
 
-    plm = AutoModel.from_pretrained(plm_path, trust_remote_code=True).eval()
+    plm = AutoModel.from_pretrained(plm_path, trust_remote_code=True, dtype=torch.float32).cuda().eval()
     all_seqs = list(set(seq_dict.values()))
     embed_dict = plm.embed_dataset(
         sequences=all_seqs,
@@ -225,6 +225,7 @@ def embed_sequences(
         save=True,
         save_path=save_path,
     )
+    plm.cpu()
     del plm
     torch.cuda.empty_cache()
     return embed_dict
