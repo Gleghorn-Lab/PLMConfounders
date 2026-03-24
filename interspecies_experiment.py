@@ -45,7 +45,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--max_length", type=int, default=512)
     parser.add_argument("--hidden_size", type=int, default=512)
-    parser.add_argument("--output_size", type=int, default=128)
+    parser.add_argument("--output_size", type=int, default=64)
     parser.add_argument("--n_tokens", type=int, default=32)
     parser.add_argument("--dropout", type=float, default=0.1)
     parser.add_argument("--min_test_rows", type=int, default=500)
