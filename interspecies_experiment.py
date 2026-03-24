@@ -48,6 +48,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output_size", type=int, default=64)
     parser.add_argument("--n_tokens", type=int, default=32)
     parser.add_argument("--dropout", type=float, default=0.1)
+    parser.add_argument("--n_epochs", type=int, default=10)
+    parser.add_argument("--patience", type=int, default=5)
+    parser.add_argument("--eval_every", type=int, default=5000)
     parser.add_argument("--min_test_rows", type=int, default=500)
     parser.add_argument("--min_interspecies", type=int, default=100)
     parser.add_argument("--bugfix", action="store_true")
@@ -278,41 +281,52 @@ def train_model(
     grad_clipper = AutoGradClipper(model)
 
     best_mcc = -1.0
+    patience_counter = 0
     global_step = 0
     os.makedirs(save_dir, exist_ok=True)
 
-    model.train()
-    for batch in tqdm(train_loader, desc=f"Training ({os.path.basename(save_dir)})"):
-        a = batch["a"].to(device)
-        b = batch["b"].to(device)
-        a_mask = batch["a_mask"].to(device)
-        b_mask = batch["b_mask"].to(device)
-        labels = batch["labels"].to(device)
+    for epoch in range(args.n_epochs):
+        model.train()
+        for batch in tqdm(train_loader, desc=f"Epoch {epoch+1}/{args.n_epochs} ({os.path.basename(save_dir)})"):
+            a = batch["a"].to(device)
+            b = batch["b"].to(device)
+            a_mask = batch["a_mask"].to(device)
+            b_mask = batch["b_mask"].to(device)
+            labels = batch["labels"].to(device)
 
-        output = model(a, b, a_mask, b_mask)
-        loss = criterion(output.logits.squeeze(-1), labels)
+            output = model(a, b, a_mask, b_mask)
+            loss = criterion(output.logits.squeeze(-1), labels)
 
-        optimizer.zero_grad()
-        loss.backward()
-        grad_clipper.clip_gradients()
-        optimizer.step()
+            optimizer.zero_grad()
+            loss.backward()
+            grad_clipper.clip_gradients()
+            optimizer.step()
 
-        global_step += 1
+            global_step += 1
 
-        if global_step % 100 == 0:
-            if WANDB_AVAILABLE:
-                wandb.log({"train/loss": loss.item()}, step=global_step)
+            if global_step % 100 == 0:
+                if WANDB_AVAILABLE:
+                    wandb.log({"train/loss": loss.item()}, step=global_step)
 
-        if global_step % 2000 == 0:
-            val_mcc = evaluate_mcc(model, valid_loader, device)
-            print(f"  Step {global_step}  loss={loss.item():.4f}  val_mcc={val_mcc:.4f}")
-            if WANDB_AVAILABLE:
-                wandb.log({"valid/mcc": val_mcc}, step=global_step)
-            if val_mcc > best_mcc:
-                best_mcc = val_mcc
-                torch.save(model.state_dict(), os.path.join(save_dir, "best_model.pt"))
-                print(f"  New best MCC: {best_mcc:.4f}")
-            model.train()
+            if global_step % args.eval_every == 0:
+                val_mcc = evaluate_mcc(model, valid_loader, device)
+                print(f"  Step {global_step}  loss={loss.item():.4f}  val_mcc={val_mcc:.4f}")
+                if WANDB_AVAILABLE:
+                    wandb.log({"valid/mcc": val_mcc}, step=global_step)
+                if val_mcc > best_mcc:
+                    best_mcc = val_mcc
+                    patience_counter = 0
+                    torch.save(model.state_dict(), os.path.join(save_dir, "best_model.pt"))
+                    print(f"  New best MCC: {best_mcc:.4f}")
+                else:
+                    patience_counter += 1
+                    if patience_counter >= args.patience:
+                        print(f"  Early stopping at step {global_step} (patience {args.patience} exceeded)")
+                        break
+                model.train()
+
+        if patience_counter >= args.patience:
+            break
 
     # Final eval
     val_mcc = evaluate_mcc(model, valid_loader, device)
