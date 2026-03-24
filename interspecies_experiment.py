@@ -10,7 +10,6 @@ import pandas as pd
 import torch
 import torch.nn as nn
 from datasets import load_dataset
-from huggingface_hub import login
 from sklearn.metrics import (
     accuracy_score,
     f1_score,
@@ -40,75 +39,20 @@ except ImportError:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Interspecies PPI experiment")
-    parser.add_argument(
-        "--plm_path",
-        type=str,
-        default="Synthyra/ESMplusplus_large",
-    )
-    parser.add_argument(
-        "--batch_size",
-        type=int,
-        default=48,
-    )
-    parser.add_argument(
-        "--lr",
-        type=float,
-        default=5e-5,
-    )
-    parser.add_argument(
-        "--max_length",
-        type=int,
-        default=512,
-    )
-    parser.add_argument(
-        "--hidden_size",
-        type=int,
-        default=512,
-    )
-    parser.add_argument(
-        "--output_size",
-        type=int,
-        default=128,
-    )
-    parser.add_argument(
-        "--n_tokens",
-        type=int,
-        default=32,
-    )
-    parser.add_argument(
-        "--dropout",
-        type=float,
-        default=0.1,
-    )
-    parser.add_argument(
-        "--min_test_rows",
-        type=int,
-        default=500,
-    )
-    parser.add_argument(
-        "--min_interspecies",
-        type=int,
-        default=100,
-    )
-    parser.add_argument(
-        "--bugfix",
-        action="store_true",
-    )
-    parser.add_argument(
-        "--hf_token",
-        type=str,
-        default=None,
-    )
-    parser.add_argument(
-        "--wandb_token",
-        type=str,
-        default=None,
-    )
-    parser.add_argument(
-        "--wandb_project",
-        type=str,
-        default="PLMConfounders",
-    )
+    parser.add_argument("--plm_path", type=str, default="Synthyra/ESMplusplus_large")
+    parser.add_argument("--batch_size", type=int, default=48)
+    parser.add_argument("--lr", type=float, default=5e-5)
+    parser.add_argument("--max_length", type=int, default=512)
+    parser.add_argument("--hidden_size", type=int, default=512)
+    parser.add_argument("--output_size", type=int, default=128)
+    parser.add_argument("--n_tokens", type=int, default=32)
+    parser.add_argument("--dropout", type=float, default=0.1)
+    parser.add_argument("--min_test_rows", type=int, default=500)
+    parser.add_argument("--min_interspecies", type=int, default=100)
+    parser.add_argument("--bugfix", action="store_true")
+    parser.add_argument("--hf_token", type=str, default=None)
+    parser.add_argument("--wandb_token", type=str, default=None)
+    parser.add_argument("--wandb_project", type=str, default="PLMConfounders")
     return parser.parse_args()
 
 
@@ -490,8 +434,12 @@ def main():
     args = parse_args()
     set_seed(42)
 
-    if args.token is not None:
-        login(args.token)
+    if args.hf_token is not None:
+        from huggingface_hub import login as hf_login
+        hf_login(args.hf_token)
+
+    if args.wandb_token is not None and WANDB_AVAILABLE:
+        wandb.login(key=args.wandb_token)
 
     results_dir = "results/interspecies_experiment"
     os.makedirs(results_dir, exist_ok=True)
