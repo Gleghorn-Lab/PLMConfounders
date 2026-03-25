@@ -284,7 +284,7 @@ def roc_comparison(
         print(f"    NS AUROC: {roc_ns.auc:.4f}  [95% CI: {ns_lo:.4f}, {ns_hi:.4f}]")
 
         result = compare(roc_ss, roc_ns, method="delong", paired=True)
-        print(f"    DeLong test: Z={result.stat:.4f}  p={result.pvalue:.4e}  delta_AUC={result.auc_diff:.4f}")
+        print(f"    DeLong test: Z={result.stat:.4f}  p={result.p_value:.4e}  delta_AUC={result.estimate:.4f}")
 
         # Plot ROC curves
         fig, ax = plt.subplots(figsize=(7, 7))
@@ -417,9 +417,11 @@ def main():
             auroc = roc_auc_score(sub_labels, sub_pb) if has_both else float("nan")
             tpr = sub_preds[pos_sub].sum() / pos_sub.sum() if pos_sub.sum() > 0 else float("nan")
             tnr = (sub_preds[neg_sub] == 0).sum() / neg_sub.sum() if neg_sub.sum() > 0 else float("nan")
+            mean_p_pos = float(sub_pb[pos_sub].mean()) if pos_sub.sum() > 0 else float("nan")
+            mean_p_neg = float(sub_pb[neg_sub].mean()) if neg_sub.sum() > 0 else float("nan")
             print(f"    {model_name}: acc={acc:.4f}  f1={f1:.4f}  mcc={mcc:.4f}  "
                   f"auroc={auroc:.4f}  tpr={tpr:.4f}  tnr={tnr:.4f}  "
-                  f"mean_p|pos={sub_pb[pos_sub].mean():.4f}  mean_p|neg={sub_pb[neg_sub].mean():.4f}")
+                  f"mean_p|pos={mean_p_pos:.4f}  mean_p|neg={mean_p_neg:.4f}")
 
     # ROC comparison with DeLong CIs
     roc_comparison(test_df, ss_probs, ns_probs, results_dir)
