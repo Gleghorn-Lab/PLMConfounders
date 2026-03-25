@@ -9,7 +9,7 @@ import numpy as np
 import seaborn as sns
 from matplotlib.axes import Axes
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
-from pauc import ROC, ci_auc
+from pauc import ROC, ci_auc, ci_sensitivity
 
 SS_COLOR = "#1f78b4"
 NS_COLOR = "#e66101"
@@ -48,6 +48,9 @@ def plot_publication_roc(
     colors: list[str] | None = None,
     show_ci: bool = True,
     ci_method: str = "delong",
+    shade_ci: bool = True,
+    shade_alpha: float = 0.15,
+    n_boot: int = 2000,
     save_path: str | None = None,
     dpi: int = 600,
 ) -> Axes:
@@ -60,6 +63,9 @@ def plot_publication_roc(
     colors : per-curve colors. Defaults to SS blue / NS orange.
     show_ci : if True, append 95% CI to legend labels via ci_auc.
     ci_method : "delong" or "bootstrap" for CI computation.
+    shade_ci : if True, draw shaded bootstrap CI band around each curve.
+    shade_alpha : transparency for CI shading.
+    n_boot : number of bootstrap replicates for CI bands.
     save_path : if provided, save figure to this path and close it.
     dpi : save resolution (default 600).
     """
@@ -89,6 +95,12 @@ def plot_publication_roc(
         label += ")"
 
         ax.plot(roc.fpr, roc.tpr, color=color, linewidth=1.5, label=label, zorder=10 + i)
+
+        if shade_ci:
+            grid = np.linspace(0, 1, 100)
+            specificities = 1.0 - grid  # ci_sensitivity wants specificities
+            tpr_lo, tpr_hi = ci_sensitivity(roc, specificities, conf_level=0.95, n_boot=n_boot)
+            ax.fill_between(grid, tpr_lo, tpr_hi, color=color, alpha=shade_alpha, zorder=2 + i)
 
     _style_ax(ax)
     ax.legend(frameon=False, fontsize=9, loc="lower right")
