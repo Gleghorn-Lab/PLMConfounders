@@ -6,22 +6,21 @@ import argparse
 import os
 import pickle
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
-from pauc import ROC, ci_auc, compare, plot_roc
+from pauc import ROC, ci_auc, compare
 from sklearn.metrics import (
     accuracy_score,
     f1_score,
     matthews_corrcoef,
     roc_auc_score,
     average_precision_score,
-    confusion_matrix,
 )
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
+from analysis.plot_roc import plot_publication_roc
 from data.data import BiogridDataset, BiogridCollator
 from model.ppi_model import PPIConfig, PPIModel
 
@@ -287,25 +286,13 @@ def roc_comparison(
         print(f"    DeLong test: Z={result.stat:.4f}  p={result.p_value:.4e}  delta_AUC={result.estimate:.4f}")
 
         # Plot ROC curves
-        fig, ax = plt.subplots(figsize=(7, 7))
-        plot_roc(
-            [roc_ss, roc_ns],
-            ax=ax,
-            title=f"ROC: SS vs NS ({subgroup_name})",
-            show_auc=True,
-            shade_auc=False,
-            plot_ci=True,
-            ci_type="sensitivity",
-            ci_alpha=0.15,
-            annotate_best=True,
-            best_method="youden",
-        )
-        ax.plot([0, 1], [0, 1], "k--", alpha=0.3, label="Random")
-        ax.legend(loc="lower right")
-        fig.tight_layout()
         save_path = os.path.join(results_dir, f"roc_{subgroup_name}.png")
-        fig.savefig(save_path, dpi=300, bbox_inches="tight")
-        plt.close(fig)
+        plot_publication_roc(
+            [roc_ss, roc_ns],
+            show_ci=True,
+            ci_method="delong",
+            save_path=save_path,
+        )
         print(f"    Saved: {save_path}")
 
 
