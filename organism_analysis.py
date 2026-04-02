@@ -7,6 +7,7 @@ from collections import Counter
 import numpy as np
 from datasets import load_dataset
 from matplotlib import pyplot as plt
+from matplotlib.patches import Patch
 
 SPECIES_ABBREV: dict[str, str] = {
     "Homo sapiens": "Hs",
@@ -123,12 +124,12 @@ def plot_results(
 
     bars_same = ax1.bar(
         [0, 1], [pos_same, neg_same],
-        color=c_same, width=0.55, label="Same-species",
+        color=c_same, width=0.55, label="Intra-species",
     )
     bars_cross = ax1.bar(
         [0, 1], [pos_cross, neg_cross],
         bottom=[pos_same, neg_same],
-        color=c_cross, width=0.55, label="Cross-species",
+        color=c_cross, width=0.55, label="Inter-species",
     )
     ax1.errorbar(
         1, neg_same, yerr=neg_std,
@@ -136,11 +137,10 @@ def plot_results(
     )
 
     ax1.set_xticks([0, 1])
-    ax1.set_xticklabels(["Positives", "Shuffled\nNegatives"], fontsize=12)
+    ax1.set_xticklabels(["Positives", "Negatives"], fontsize=12)
     ax1.set_ylabel("Proportion of pairs (%)", fontsize=12)
     ax1.set_ylim(0, 105)
     ax1.set_title("A", fontsize=14, fontweight="bold", loc="left")
-    ax1.legend(fontsize=10, loc="upper right")
     ax1.spines["top"].set_visible(False)
     ax1.spines["right"].set_visible(False)
 
@@ -185,13 +185,26 @@ def plot_results(
     log_neg = np.maximum(log_neg, 0)
 
     ax2.bar(angles, log_pos, width=bar_width, color=c_pos, alpha=0.65, label="Positives", zorder=2)
-    ax2.bar(angles, log_neg, width=bar_width, color=c_neg, alpha=0.65, label="Shuffled Negatives", zorder=2)
+    ax2.bar(angles, log_neg, width=bar_width, color=c_neg, alpha=0.65, label="Negatives", zorder=2)
     ax2.set_rlim(bottom=0)
 
     ax2.set_xticks(angles)
-    ax2.set_xticklabels(labels, fontsize=7)
+    ax2.set_xticklabels(labels, fontsize=9)
+    ax2.tick_params(axis="x", pad=10)
+    c_intra = "#2b8c6e"
+    c_inter = "#e05e5e"
+    for tick_label in ax2.get_xticklabels():
+        parts = tick_label.get_text().split("-")
+        tick_label.set_color(c_intra if parts[0] == parts[1] else c_inter)
+        tick_label.set_fontweight("bold")
     ax2.set_title("B", fontsize=14, fontweight="bold", loc="left", pad=20)
-    ax2.legend(fontsize=9, loc="upper right", bbox_to_anchor=(1.35, 1.15))
+    ax2_legend = ax2.legend(fontsize=9, loc="upper right", bbox_to_anchor=(1.35, 1.05))
+    ax2.add_artist(ax2_legend)
+    intra_inter_handles = [
+        Patch(facecolor=c_intra, label="Intra-species"),
+        Patch(facecolor=c_inter, label="Inter-species"),
+    ]
+    ax2.legend(handles=intra_inter_handles, fontsize=9, loc="upper right", bbox_to_anchor=(1.35, 0.9))
 
     r_ticks = [np.log10(v) - r_min for v in [0.1, 1, 10]]
     ax2.set_rticks(r_ticks)
