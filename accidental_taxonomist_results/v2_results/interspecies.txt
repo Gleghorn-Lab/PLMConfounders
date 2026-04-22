@@ -1,0 +1,204 @@
+============================================================
+TEST SET COMPOSITION
+============================================================
+Total: 2815
+Positives: 2762  Negatives: 53
+Interspecies rows: 1091  Intraspecies rows: 1724
+  Interspecies positives: 1091
+  Interspecies negatives: 0
+  Intraspecies positives: 1671
+  Intraspecies negatives: 53
+
+Organism pair distribution in test positives:
+  Severe acute respiratory syndrome coronavirus 2 / Severe acute respiratory syndrome coronavirus 2: 1257 (intra)
+  Homo sapiens / Severe acute respiratory syndrome coronavirus 2: 982 (inter)
+  Severe acute respiratory syndrome-related coronavirus / Severe acute respiratory syndrome-related coronavirus: 353 (intra)
+  Homo sapiens / Severe acute respiratory syndrome-related coronavirus: 63 (inter)
+  Homo sapiens / Homo sapiens: 32 (intra)
+  Middle-East Respiratory Syndrome-related Coronavirus / Middle-East Respiratory Syndrome-related Coronavirus: 29 (intra)
+  Mus musculus / Severe acute respiratory syndrome coronavirus 2: 15 (inter)
+  Felis Catus / Severe acute respiratory syndrome coronavirus 2: 6 (inter)
+  Canis familiaris / Severe acute respiratory syndrome coronavirus 2: 5 (inter)
+  Bos taurus / Severe acute respiratory syndrome coronavirus 2: 4 (inter)
+
+Organism pair distribution in test negatives:
+  Severe acute respiratory syndrome-related coronavirus / Severe acute respiratory syndrome-related coronavirus: 23 (intra)
+  Severe acute respiratory syndrome coronavirus 2 / Severe acute respiratory syndrome coronavirus 2: 18 (intra)
+  Middle-East Respiratory Syndrome-related Coronavirus / Middle-East Respiratory Syndrome-related Coronavirus: 3 (intra)
+  Sus scrofa / Sus scrofa: 1 (intra)
+  Macaca mulatta / Macaca mulatta: 1 (intra)
+  Mus musculus / Mus musculus: 1 (intra)
+  Cricetulus griseus / Cricetulus griseus: 1 (intra)
+  Equus caballus / Equus caballus: 1 (intra)
+  Canis familiaris / Canis familiaris: 1 (intra)
+  Rattus norvegicus / Rattus norvegicus: 1 (intra)
+Inference: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████| 22/22 [00:01<00:00, 14.92it/s]
+Inference: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████| 22/22 [00:01<00:00, 14.39it/s]
+
+============================================================
+  MODEL: SS (Strategic Sampling)
+============================================================
+
+  --- ALL ---
+  N=2815  (pos=2762, neg=53)
+  TP=1016  TN=45  FP=8  FN=1746
+  TPR (recall)=0.3678  TNR (specificity)=0.8491  PPV (precision)=0.9922
+  Accuracy=0.3769  F1=0.5367  MCC=0.0613
+  AUROC=0.7965  PR-AUC=0.9948
+  Mean P(pos)|pos=0.6180  Mean P(pos)|neg=0.4946
+  Median P(pos)|pos=0.4705  Median P(pos)|neg=0.4576
+
+  --- INTERSPECIES (all rows) ---
+  N=1091  (pos=1091, neg=0)
+  TP=0  TN=0  FP=0  FN=1091
+  TPR (recall)=0.0000  TNR (specificity)=nan  PPV (precision)=nan
+  Accuracy=0.0000  F1=0.0000  MCC=0.0000
+  AUROC=nan  PR-AUC=nan
+  Mean P(pos)|pos=0.4644  Mean P(pos)|neg=nan
+  Median P(pos)|pos=0.4576  Median P(pos)|neg=nan
+    Positives: n=1091  predicted_pos=0  predicted_neg=1091  recall=0.0000  mean_prob=0.4644
+
+  --- INTRASPECIES (all rows) ---
+  N=1724  (pos=1671, neg=53)
+  TP=1016  TN=45  FP=8  FN=655
+  TPR (recall)=0.6080  TNR (specificity)=0.8491  PPV (precision)=0.9922
+  Accuracy=0.6154  F1=0.7540  MCC=0.1607
+  AUROC=0.8094  PR-AUC=0.9929
+  Mean P(pos)|pos=0.7184  Mean P(pos)|neg=0.4946
+  Median P(pos)|pos=0.8384  Median P(pos)|neg=0.4576
+    Positives: n=1671  predicted_pos=1016  predicted_neg=655  recall=0.6080  mean_prob=0.7184
+    Negatives: n=53  predicted_pos=8  predicted_neg=45  specificity=0.8491  mean_prob=0.4946
+
+  --- ORGANISM PAIR BREAKDOWN ---
+  Unique organism pairs: 25
+  Top 15 pairs:
+    Severe acute respiratory syndrome coronavirus 2 / Severe acute respiratory syndrome coronavirus 2  n= 1275  pos= 1257  neg=   18  TP=  735  mean_p=0.707  cross=N
+    Homo sapiens / Severe acute respiratory syndrome coronavirus 2  n=  982  pos=  982  neg=    0  TP=    0  mean_p=0.464  cross=Y
+    Severe acute respiratory syndrome-related coronavirus / Severe acute respiratory syndrome-related coronavirus  n=  376  pos=  353  neg=   23  TP=  246  mean_p=0.746  cross=N
+    Homo sapiens / Severe acute respiratory syndrome-related coronavirus  n=   63  pos=   63  neg=    0  TP=    0  mean_p=0.473  cross=Y
+    Homo sapiens / Homo sapiens                         n=   32  pos=   32  neg=    0  TP=   32  mean_p=0.714  cross=N
+    Middle-East Respiratory Syndrome-related Coronavirus / Middle-East Respiratory Syndrome-related Coronavirus  n=   32  pos=   29  neg=    3  TP=    3  mean_p=0.493  cross=N
+    Mus musculus / Severe acute respiratory syndrome coronavirus 2  n=   15  pos=   15  neg=    0  TP=    0  mean_p=0.465  cross=Y
+    Felis Catus / Severe acute respiratory syndrome coronavirus 2  n=    6  pos=    6  neg=    0  TP=    0  mean_p=0.458  cross=Y
+    Canis familiaris / Severe acute respiratory syndrome coronavirus 2  n=    5  pos=    5  neg=    0  TP=    0  mean_p=0.464  cross=Y
+    Severe acute respiratory syndrome coronavirus 2 / Sus scrofa  n=    4  pos=    4  neg=    0  TP=    0  mean_p=0.458  cross=Y
+    Bos taurus / Severe acute respiratory syndrome coronavirus 2  n=    4  pos=    4  neg=    0  TP=    0  mean_p=0.478  cross=Y
+    Macaca mulatta / Severe acute respiratory syndrome coronavirus 2  n=    3  pos=    3  neg=    0  TP=    0  mean_p=0.462  cross=Y
+    Equus caballus / Severe acute respiratory syndrome coronavirus 2  n=    3  pos=    3  neg=    0  TP=    0  mean_p=0.458  cross=Y
+    Severe acute respiratory syndrome coronavirus 2 / Severe acute respiratory syndrome-related coronavirus  n=    2  pos=    2  neg=    0  TP=    0  mean_p=0.458  cross=Y
+    Cricetulus griseus / Severe acute respiratory syndrome coronavirus 2  n=    2  pos=    2  neg=    0  TP=    0  mean_p=0.464  cross=Y
+
+  --- INTERSPECIES POSITIVE PAIRS (organism breakdown) ---
+    Homo sapiens / Severe acute respiratory syndrome coronavirus 2  n=  982  pred_pos=    0  recall=0.000  mean_p=0.464  med_p=0.458
+    Homo sapiens / Severe acute respiratory syndrome-related coronavirus  n=   63  pred_pos=    0  recall=0.000  mean_p=0.473  med_p=0.458
+    Mus musculus / Severe acute respiratory syndrome coronavirus 2  n=   15  pred_pos=    0  recall=0.000  mean_p=0.465  med_p=0.469
+    Felis Catus / Severe acute respiratory syndrome coronavirus 2  n=    6  pred_pos=    0  recall=0.000  mean_p=0.458  med_p=0.458
+    Canis familiaris / Severe acute respiratory syndrome coronavirus 2  n=    5  pred_pos=    0  recall=0.000  mean_p=0.464  med_p=0.468
+    Bos taurus / Severe acute respiratory syndrome coronavirus 2  n=    4  pred_pos=    0  recall=0.000  mean_p=0.478  med_p=0.485
+    Severe acute respiratory syndrome coronavirus 2 / Sus scrofa  n=    4  pred_pos=    0  recall=0.000  mean_p=0.458  med_p=0.458
+    Equus caballus / Severe acute respiratory syndrome coronavirus 2  n=    3  pred_pos=    0  recall=0.000  mean_p=0.458  med_p=0.458
+    Macaca mulatta / Severe acute respiratory syndrome coronavirus 2  n=    3  pred_pos=    0  recall=0.000  mean_p=0.462  med_p=0.458
+    Cricetulus griseus / Severe acute respiratory syndrome coronavirus 2  n=    2  pred_pos=    0  recall=0.000  mean_p=0.464  med_p=0.464
+    Rattus norvegicus / Severe acute respiratory syndrome coronavirus 2  n=    2  pred_pos=    0  recall=0.000  mean_p=0.461  med_p=0.461
+    Severe acute respiratory syndrome coronavirus 2 / Severe acute respiratory syndrome-related coronavirus  n=    2  pred_pos=    0  recall=0.000  mean_p=0.458  med_p=0.458
+
+============================================================
+  MODEL: NS (Normal Sampling)
+============================================================
+
+  --- ALL ---
+  N=2815  (pos=2762, neg=53)
+  TP=858  TN=24  FP=29  FN=1904
+  TPR (recall)=0.3106  TNR (specificity)=0.4528  PPV (precision)=0.9673
+  Accuracy=0.3133  F1=0.4703  MCC=-0.0692
+  AUROC=0.3849  PR-AUC=0.9815
+  Mean P(pos)|pos=0.5971  Mean P(pos)|neg=0.6427
+  Median P(pos)|pos=0.4576  Median P(pos)|neg=0.6246
+
+  --- INTERSPECIES (all rows) ---
+  N=1091  (pos=1091, neg=0)
+  TP=2  TN=0  FP=0  FN=1089
+  TPR (recall)=0.0018  TNR (specificity)=nan  PPV (precision)=1.0000
+  Accuracy=0.0018  F1=0.0037  MCC=0.0000
+  AUROC=nan  PR-AUC=nan
+  Mean P(pos)|pos=0.4586  Mean P(pos)|neg=nan
+  Median P(pos)|pos=0.4576  Median P(pos)|neg=nan
+    Positives: n=1091  predicted_pos=2  predicted_neg=1089  recall=0.0018  mean_prob=0.4586
+
+  --- INTRASPECIES (all rows) ---
+  N=1724  (pos=1671, neg=53)
+  TP=856  TN=24  FP=29  FN=815
+  TPR (recall)=0.5123  TNR (specificity)=0.4528  PPV (precision)=0.9672
+  Accuracy=0.5104  F1=0.6698  MCC=-0.0121
+  AUROC=0.4875  PR-AUC=0.9790
+  Mean P(pos)|pos=0.6875  Mean P(pos)|neg=0.6427
+  Median P(pos)|pos=0.7075  Median P(pos)|neg=0.6246
+    Positives: n=1671  predicted_pos=856  predicted_neg=815  recall=0.5123  mean_prob=0.6875
+    Negatives: n=53  predicted_pos=29  predicted_neg=24  specificity=0.4528  mean_prob=0.6427
+
+  --- ORGANISM PAIR BREAKDOWN ---
+  Unique organism pairs: 25
+  Top 15 pairs:
+    Severe acute respiratory syndrome coronavirus 2 / Severe acute respiratory syndrome coronavirus 2  n= 1275  pos= 1257  neg=   18  TP=  524  mean_p=0.654  cross=N
+    Homo sapiens / Severe acute respiratory syndrome coronavirus 2  n=  982  pos=  982  neg=    0  TP=    0  mean_p=0.458  cross=Y
+    Severe acute respiratory syndrome-related coronavirus / Severe acute respiratory syndrome-related coronavirus  n=  376  pos=  353  neg=   23  TP=  305  mean_p=0.797  cross=N
+    Homo sapiens / Severe acute respiratory syndrome-related coronavirus  n=   63  pos=   63  neg=    0  TP=    0  mean_p=0.458  cross=Y
+    Homo sapiens / Homo sapiens                         n=   32  pos=   32  neg=    0  TP=    0  mean_p=0.461  cross=N
+    Middle-East Respiratory Syndrome-related Coronavirus / Middle-East Respiratory Syndrome-related Coronavirus  n=   32  pos=   29  neg=    3  TP=   27  mean_p=0.841  cross=N
+    Mus musculus / Severe acute respiratory syndrome coronavirus 2  n=   15  pos=   15  neg=    0  TP=    0  mean_p=0.458  cross=Y
+    Felis Catus / Severe acute respiratory syndrome coronavirus 2  n=    6  pos=    6  neg=    0  TP=    0  mean_p=0.458  cross=Y
+    Canis familiaris / Severe acute respiratory syndrome coronavirus 2  n=    5  pos=    5  neg=    0  TP=    0  mean_p=0.458  cross=Y
+    Severe acute respiratory syndrome coronavirus 2 / Sus scrofa  n=    4  pos=    4  neg=    0  TP=    0  mean_p=0.458  cross=Y
+    Bos taurus / Severe acute respiratory syndrome coronavirus 2  n=    4  pos=    4  neg=    0  TP=    0  mean_p=0.458  cross=Y
+    Macaca mulatta / Severe acute respiratory syndrome coronavirus 2  n=    3  pos=    3  neg=    0  TP=    0  mean_p=0.458  cross=Y
+    Equus caballus / Severe acute respiratory syndrome coronavirus 2  n=    3  pos=    3  neg=    0  TP=    0  mean_p=0.458  cross=Y
+    Severe acute respiratory syndrome coronavirus 2 / Severe acute respiratory syndrome-related coronavirus  n=    2  pos=    2  neg=    0  TP=    2  mean_p=0.981  cross=Y
+    Cricetulus griseus / Severe acute respiratory syndrome coronavirus 2  n=    2  pos=    2  neg=    0  TP=    0  mean_p=0.458  cross=Y
+
+  --- INTERSPECIES POSITIVE PAIRS (organism breakdown) ---
+    Homo sapiens / Severe acute respiratory syndrome coronavirus 2  n=  982  pred_pos=    0  recall=0.000  mean_p=0.458  med_p=0.458
+    Homo sapiens / Severe acute respiratory syndrome-related coronavirus  n=   63  pred_pos=    0  recall=0.000  mean_p=0.458  med_p=0.458
+    Mus musculus / Severe acute respiratory syndrome coronavirus 2  n=   15  pred_pos=    0  recall=0.000  mean_p=0.458  med_p=0.458
+    Felis Catus / Severe acute respiratory syndrome coronavirus 2  n=    6  pred_pos=    0  recall=0.000  mean_p=0.458  med_p=0.458
+    Canis familiaris / Severe acute respiratory syndrome coronavirus 2  n=    5  pred_pos=    0  recall=0.000  mean_p=0.458  med_p=0.458
+    Bos taurus / Severe acute respiratory syndrome coronavirus 2  n=    4  pred_pos=    0  recall=0.000  mean_p=0.458  med_p=0.458
+    Severe acute respiratory syndrome coronavirus 2 / Sus scrofa  n=    4  pred_pos=    0  recall=0.000  mean_p=0.458  med_p=0.458
+    Equus caballus / Severe acute respiratory syndrome coronavirus 2  n=    3  pred_pos=    0  recall=0.000  mean_p=0.458  med_p=0.458
+    Macaca mulatta / Severe acute respiratory syndrome coronavirus 2  n=    3  pred_pos=    0  recall=0.000  mean_p=0.458  med_p=0.458
+    Cricetulus griseus / Severe acute respiratory syndrome coronavirus 2  n=    2  pred_pos=    0  recall=0.000  mean_p=0.458  med_p=0.458
+    Rattus norvegicus / Severe acute respiratory syndrome coronavirus 2  n=    2  pred_pos=    0  recall=0.000  mean_p=0.458  med_p=0.458
+    Severe acute respiratory syndrome coronavirus 2 / Severe acute respiratory syndrome-related coronavirus  n=    2  pred_pos=    2  recall=1.000  mean_p=0.981  med_p=0.981
+
+============================================================
+  SS vs NS COMPARISON (threshold=0.5 on probabilities)
+============================================================
+
+  ALL: n=2815 (pos=2762, neg=53)
+    SS: acc=0.3769  f1=0.5367  mcc=0.0613  auroc=0.7965  tpr=0.3678  tnr=0.8491  mean_p|pos=0.6180  mean_p|neg=0.4946
+    NS: acc=0.3133  f1=0.4703  mcc=-0.0692  auroc=0.3849  tpr=0.3106  tnr=0.4528  mean_p|pos=0.5971  mean_p|neg=0.6427
+
+  INTERSPECIES: n=1091 (pos=1091, neg=0)
+    SS: acc=0.0000  f1=0.0000  mcc=0.0000  auroc=nan  tpr=0.0000  tnr=nan  mean_p|pos=0.4644  mean_p|neg=nan
+    NS: acc=0.0018  f1=0.0037  mcc=0.0000  auroc=nan  tpr=0.0018  tnr=nan  mean_p|pos=0.4586  mean_p|neg=nan
+
+  INTRASPECIES: n=1724 (pos=1671, neg=53)
+    SS: acc=0.6154  f1=0.7540  mcc=0.1607  auroc=0.8094  tpr=0.6080  tnr=0.8491  mean_p|pos=0.7184  mean_p|neg=0.4946
+    NS: acc=0.5104  f1=0.6698  mcc=-0.0121  auroc=0.4875  tpr=0.5123  tnr=0.4528  mean_p|pos=0.6875  mean_p|neg=0.6427
+
+============================================================
+  ROC COMPARISON (DeLong CIs)
+============================================================
+
+  ALL (n=2815, pos=2762, neg=53)
+    SS AUROC: 0.7965  [95% CI: 0.7307, 0.8624]
+    NS AUROC: 0.6151  [95% CI: 0.5567, 0.6735]
+    DeLong test: Z=3.5970  p=3.2189e-04  delta_AUC=0.1814
+    Saved: results/interspecies_experiment/roc_all.png
+
+  INTERSPECIES: skipped (single class)
+
+  INTRASPECIES (n=1724, pos=1671, neg=53)
+    SS AUROC: 0.8094  [95% CI: 0.7658, 0.8530]
+    NS AUROC: 0.4875  [95% CI: 0.4419, 0.5330]
+    DeLong test: Z=11.3692  p=0.0000e+00  delta_AUC=0.3219
+    Saved: results/interspecies_experiment/roc_intraspecies.png

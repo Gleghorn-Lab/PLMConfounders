@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from copy import deepcopy as copy
 from typing import Optional, Tuple
 from transformers import PretrainedConfig, PreTrainedModel

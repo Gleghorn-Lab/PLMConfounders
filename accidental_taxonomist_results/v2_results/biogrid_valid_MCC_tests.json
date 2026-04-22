@@ -1,0 +1,9 @@
+{
+  "metric": "balanced_mcc",
+  "n_SS": 5,
+  "n_NS": 5,
+  "mean_SS": 0.34188,
+  "mean_NS": 0.6338,
+  "t_test_pvalue": 9.423362878050867e-06,
+  "stars": "****"
+}

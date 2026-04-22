@@ -1,0 +1,9 @@
+{
+  "metric": "balanced_roc_auc",
+  "n_SS": 5,
+  "n_NS": 5,
+  "mean_SS": 0.68822,
+  "mean_NS": 0.8785399999999999,
+  "t_test_pvalue": 4.510779257682151e-06,
+  "stars": "****"
+}
